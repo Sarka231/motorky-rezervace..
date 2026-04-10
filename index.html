@@ -208,10 +208,6 @@
                 font-size: 20px;
             }
 
-            input, select, button {
-                font-size: 14px;
-            }
-
             .toolbar {
                 flex-direction: column;
             }
@@ -334,13 +330,15 @@ function renderReservations(data) {
 
         const row = document.createElement("tr");
         row.innerHTML = `
-            <td>${r.bike}</td>
-            <td>${r.teacher}</td>
-            <td>${r.date}</td>
-            <td>${r.from} – ${r.to}</td>
-            <td><span class="badge">${status}</span></td>
+            <tr>
+                <td>${r.bike}</td>
+                <td>${r.teacher}</td>
+                <td>${r.date}</td>
+                <td>${r.from} – ${r.to}</td>
+                <td><span class="badge">${status}</span></td>
+            </tr>
         `;
-        calendarBody.appendChild(row);
+        calendarBody.insertAdjacentHTML("beforeend", row.innerHTML);
     });
 }
 
@@ -362,46 +360,61 @@ function applyFilters() {
 }
 
 async function loadReservations() {
-    const res = await fetch("/reservations");
-    const data = await res.json();
-    allReservations = data;
-    applyFilters();
+    try {
+        const res = await fetch("/reservations");
+        const data = await res.json();
+        allReservations = data;
+        applyFilters();
+    } catch (error) {
+        showMessage("Nepodařilo se načíst rezervace.", "error");
+        console.error(error);
+    }
 }
 
 document.getElementById("reservationForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     clearMessage();
 
-    const teacher = document.getElementById("teacher").value.trim();
-    const bike = document.getElementById("bike").value;
-    const date = document.getElementById("date").value;
-    const from = document.getElementById("from").value;
-    const to = document.getElementById("to").value;
+    const reservation = {
+        teacher: document.getElementById("teacher").value.trim(),
+        bike: document.getElementById("bike").value.trim(),
+        date: document.getElementById("date").value,
+        from: document.getElementById("from").value,
+        to: document.getElementById("to").value
+    };
 
-    const reservation = { teacher, bike, date, from, to };
-
-    if (!teacher || !date || !from || !to) {
-        return showMessage("Vyplň všechna pole.", "error");
+    if (!reservation.teacher || !reservation.bike || !reservation.date || !reservation.from || !reservation.to) {
+        showMessage("Vyplň všechna pole.", "error");
+        return;
     }
 
-    if (from >= to) {
-        return showMessage("Čas OD musí být menší než čas DO.", "error");
+    if (reservation.from >= reservation.to) {
+        showMessage("Čas od musí být menší než čas do.", "error");
+        return;
     }
 
-    const res = await fetch("/reserve", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(reservation)
-    });
+    try {
+        const res = await fetch("/reserve", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(reservation)
+        });
 
-    const data = await res.json();
+        const data = await res.json();
 
-    if (data.error) {
-        showMessage(data.error, "error");
-    } else {
-        showMessage("Rezervace byla úspěšně uložena.", "success");
+        if (!res.ok) {
+            showMessage(data.error || "Rezervaci se nepodařilo uložit.", "error");
+            return;
+        }
+
+        showMessage(data.message || "Rezervace byla úspěšně uložena.", "success");
         document.getElementById("reservationForm").reset();
-        loadReservations();
+        await loadReservations();
+    } catch (error) {
+        showMessage("Chyba spojení se serverem.", "error");
+        console.error(error);
     }
 });
 
