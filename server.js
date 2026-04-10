@@ -55,8 +55,25 @@ function hasTimeConflict(existing, incoming) {
     return incomingFrom < existingTo && incomingTo > existingFrom;
 }
 
+function isReservationVisible(reservation) {
+    const endDateTime = new Date(`${reservation.date}T${reservation.to}:00`);
+    if (isNaN(endDateTime.getTime())) {
+        return true;
+    }
+
+    const visibleUntil = new Date(endDateTime);
+    visibleUntil.setDate(visibleUntil.getDate() + 2);
+
+    return new Date() <= visibleUntil;
+}
+
+function getVisibleReservations() {
+    const allReservations = loadReservations();
+    return allReservations.filter(isReservationVisible);
+}
+
 app.get("/reservations", (req, res) => {
-    const reservations = loadReservations();
+    const reservations = getVisibleReservations();
     res.json(reservations);
 });
 
@@ -79,7 +96,7 @@ app.post("/reserve", (req, res) => {
         });
     }
 
-    const reservations = loadReservations();
+    const allReservations = loadReservations();
 
     const newReservation = {
         teacher,
@@ -89,7 +106,7 @@ app.post("/reserve", (req, res) => {
         to
     };
 
-    const conflict = reservations.find(existing =>
+    const conflict = allReservations.find(existing =>
         hasTimeConflict(existing, newReservation)
     );
 
@@ -99,8 +116,8 @@ app.post("/reserve", (req, res) => {
         });
     }
 
-    reservations.push(newReservation);
-    saveReservations(reservations);
+    allReservations.push(newReservation);
+    saveReservations(allReservations);
 
     return res.json({
         success: true,

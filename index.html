@@ -249,8 +249,7 @@
                     <option value="Jan Vurm">Jan Vurm</option>
                     <option value="Jaroslav Říha">Jaroslav Říha</option>
                     <option value="Josef Rosůlek">Josef Rosůlek</option>
-                    <option value="Petr Kos">Petr Kos</option>
-                    <option value="Šárka Paulusová">Šárka Paulusová</option>
+                    <option value="Kos">Kos</option>
                     <option value="__other__">Dopsat další jméno</option>
                 </select>
 
@@ -362,7 +361,7 @@ function renderReservations(data) {
     const now = new Date();
 
     data.forEach(r => {
-        const endDateTime = new Date(`${r.date}T${r.to}`);
+        const endDateTime = new Date(`${r.date}T${r.to}:00`);
         const status = endDateTime < now ? "Proběhlo" : "Aktivní";
 
         calendarBody.insertAdjacentHTML("beforeend", `
