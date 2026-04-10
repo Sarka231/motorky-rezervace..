@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <title>Rezervace motorek</title>
+    <style>
+        body { font-family: Arial; margin: 40px; }
+        label { display: block; margin-top: 10px; }
+        table { border-collapse: collapse; margin-top: 30px; width: 100%; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+        th { background: #eee; }
+    </style>
+</head>
+<body>
+
+<h1>Rezervace motorek</h1>
+
+<form id="reservationForm">
+    <label>Lektor:
+        <input type="text" id="teacher" required>
+    </label>
+
+    <label>Motorka:
+        <select id="bike">
+            <option>A1 Yamaha IBR</option>
+            <option>A1 Honda</option>
+            <option>A1 Benelli</option>
+            <option>A2</option>
+            <option>A</option>
+        </select>
+    </label>
+
+    <label>Datum:
+        <input type="date" id="date" required>
+    </label>
+
+    <label>Čas od:
+        <input type="time" id="from" required>
+    </label>
+
+    <label>Čas do:
+        <input type="time" id="to" required>
+    </label>
+
+    <button type="submit">Rezervovat</button>
+</form>
+
+<h2>Kalendář rezervací</h2>
+<table id="calendar">
+    <thead>
+        <tr>
+            <th>Motorka</th>
+            <th>Lektor</th>
+            <th>Datum</th>
+            <th>Čas</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script>
+async function loadReservations() {
+    const res = await fetch("/reservations");
+    const data = await res.json();
+
+    const tbody = document.querySelector("#calendar tbody");
+    tbody.innerHTML = "";
+
+    data.forEach(r => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${r.bike}</td>
+            <td>${r.teacher}</td>
+            <td>${r.date}</td>
+            <td>${r.from} – ${r.to}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+document.getElementById("reservationForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const reservation = {
+        teacher: document.getElementById("teacher").value,
+        bike: document.getElementById("bike").value,
+        date: document.getElementById("date").value,
+        from: document.getElementById("from").value,
+        to: document.getElementById("to").value
+    };
+
+    await fetch("/reserve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(reservation)
+    });
+
+    loadReservations();
+});
+
+loadReservations();
+</script>
+
+</body>
+</html>
