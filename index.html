@@ -183,6 +183,10 @@
             font-size: 15px;
         }
 
+        .hidden {
+            display: none;
+        }
+
         @media (max-width: 1000px) {
             .layout {
                 grid-template-columns: 1fr;
@@ -233,8 +237,27 @@
             <h2>Nová rezervace</h2>
 
             <form id="reservationForm">
-                <label for="teacher">Lektor</label>
-                <input type="text" id="teacher" required>
+                <label for="teacherSelect">Lektor</label>
+                <select id="teacherSelect" required>
+                    <option value="">-- Vyber lektora --</option>
+                    <option value="Aleš Pinkas">Aleš Pinkas</option>
+                    <option value="Radek Skořepa">Radek Skořepa</option>
+                    <option value="Zdeněk Wagner">Zdeněk Wagner</option>
+                    <option value="Miroslav Kotek">Miroslav Kotek</option>
+                    <option value="Petr Vurm">Petr Vurm</option>
+                    <option value="Vlastimil Macháček">Vlastimil Macháček</option>
+                    <option value="Jan Vurm">Jan Vurm</option>
+                    <option value="Jaroslav Říha">Jaroslav Říha</option>
+                    <option value="Josef Rosůlek">Josef Rosůlek</option>
+                    <option value="Petr Kos">Petr Kos</option>
+                    <option value="Šárka Paulusová">Petr Kos</option>
+                    <option value="__other__">Dopsat další jméno</option>
+                </select>
+
+                <div id="otherTeacherWrap" class="hidden">
+                    <label for="teacherCustom">Jiný lektor</label>
+                    <input type="text" id="teacherCustom" placeholder="Napiš jméno lektora">
+                </div>
 
                 <label for="bike">Motorka</label>
                 <select id="bike">
@@ -291,8 +314,22 @@ const msg = document.getElementById("msg");
 const calendarBody = document.getElementById("calendar");
 const searchInput = document.getElementById("searchInput");
 const filterDate = document.getElementById("filterDate");
+const teacherSelect = document.getElementById("teacherSelect");
+const teacherCustom = document.getElementById("teacherCustom");
+const otherTeacherWrap = document.getElementById("otherTeacherWrap");
 
 let allReservations = [];
+
+teacherSelect.addEventListener("change", () => {
+    if (teacherSelect.value === "__other__") {
+        otherTeacherWrap.classList.remove("hidden");
+        teacherCustom.required = true;
+    } else {
+        otherTeacherWrap.classList.add("hidden");
+        teacherCustom.required = false;
+        teacherCustom.value = "";
+    }
+});
 
 function showMessage(text, type) {
     msg.innerHTML = `<div class="message ${type}">${text}</div>`;
@@ -328,8 +365,7 @@ function renderReservations(data) {
         const endDateTime = new Date(`${r.date}T${r.to}`);
         const status = endDateTime < now ? "Proběhlo" : "Aktivní";
 
-        const row = document.createElement("tr");
-        row.innerHTML = `
+        calendarBody.insertAdjacentHTML("beforeend", `
             <tr>
                 <td>${r.bike}</td>
                 <td>${r.teacher}</td>
@@ -337,8 +373,7 @@ function renderReservations(data) {
                 <td>${r.from} – ${r.to}</td>
                 <td><span class="badge">${status}</span></td>
             </tr>
-        `;
-        calendarBody.insertAdjacentHTML("beforeend", row.innerHTML);
+        `);
     });
 }
 
@@ -375,8 +410,14 @@ document.getElementById("reservationForm").addEventListener("submit", async (e) 
     e.preventDefault();
     clearMessage();
 
+    let teacher = teacherSelect.value;
+
+    if (teacher === "__other__") {
+        teacher = teacherCustom.value.trim();
+    }
+
     const reservation = {
-        teacher: document.getElementById("teacher").value.trim(),
+        teacher: teacher,
         bike: document.getElementById("bike").value.trim(),
         date: document.getElementById("date").value,
         from: document.getElementById("from").value,
@@ -411,6 +452,9 @@ document.getElementById("reservationForm").addEventListener("submit", async (e) 
 
         showMessage(data.message || "Rezervace byla úspěšně uložena.", "success");
         document.getElementById("reservationForm").reset();
+        otherTeacherWrap.classList.add("hidden");
+        teacherCustom.required = false;
+        teacherCustom.value = "";
         await loadReservations();
     } catch (error) {
         showMessage("Chyba spojení se serverem.", "error");
